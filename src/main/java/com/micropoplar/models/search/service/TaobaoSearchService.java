@@ -33,7 +33,8 @@ public class TaobaoSearchService {
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-  private static final String TMP_SEARCH = "https://s.taobao.com/search?q=%s&s=%d&sort=price-asc";
+  private static final String TMP_SEARCH = "https://s.taobao.com/search?q=%s&s=%d&sort=%s";
+  private static final Pattern PTN_SEARCH_RESULT = Pattern.compile("g_page_config = ([\\S ]*);");
 
   @Autowired
   private ObjectMapper mapper;
@@ -47,12 +48,11 @@ public class TaobaoSearchService {
 
     logger.info("[搜索]关键字: " + reqSearch.getKeyword());
 
-    Document doc = Jsoup.parse(
-        new URL(String.format(TMP_SEARCH, reqSearch.getKeyword(), reqSearch.getOffset())), 20000);
+    Document doc = Jsoup.parse(new URL(String.format(TMP_SEARCH, reqSearch.getKeyword(),
+        reqSearch.getOffset(), reqSearch.getSort())), 20000);
     String docString = doc.toString();
 
-    Pattern pattern = Pattern.compile("g_page_config = ([\\S ]*);");
-    Matcher matcher = pattern.matcher(docString);
+    Matcher matcher = PTN_SEARCH_RESULT.matcher(docString);
 
     if (!matcher.find()) {
       return new RespSearchResultWrapper(reqSearch, 0, Collections.EMPTY_LIST);
