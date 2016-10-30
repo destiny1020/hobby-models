@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<include resource="org/springframework/boot/logging/logback/base.xml" />
+
+	<appender name="LOG_DAILY"
+		class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<Prudent>true</Prudent>
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<FileNamePattern>
+				logs/models.%d{yyyy-MM-dd}.log
+			</FileNamePattern>
+			<!-- keep 60 days worth of history -->
+			<MaxHistory>60</MaxHistory>
+		</rollingPolicy>
+		<layout class="ch.qos.logback.classic.PatternLayout">
+			<Pattern>
+				%d{yyyy-MM-dd HH:mm:ss} [%p] - %t %logger{15}: %msg%n
+			</Pattern>
+		</layout>
+	</appender>
+	<appender name="LOG_DAILY_SEARCH"
+		class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<Prudent>true</Prudent>
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<FileNamePattern>
+				logs/models-search.%d{yyyy-MM-dd}.log
+			</FileNamePattern>
+			<!-- keep 120 days worth of history -->
+			<MaxHistory>120</MaxHistory>
+		</rollingPolicy>
+		<layout class="ch.qos.logback.classic.PatternLayout">
+			<Pattern>
+				%d{yyyy-MM-dd HH:mm:ss} [%p] - %t %logger{15}: %msg%n
+			</Pattern>
+		</layout>
+	</appender>
+
+	<logger name="org.springframework" level="INFO" additivity="false">
+		<appender-ref ref="CONSOLE" />
+	</logger>
+	<logger name="org.hibernate" level="INFO" additivity="false">
+		<appender-ref ref="CONSOLE" />
+	</logger>
+	<!-- <logger name="org.hibernate.type" level="TRACE" additivity="false"> 
+		<appender-ref ref="CONSOLE" /> </logger> -->
+	<logger name="org.apache" level="INFO" additivity="false">
+		<appender-ref ref="CONSOLE" />
+	</logger>
+	<logger name="com.micropoplar.models" level="DEBUG" additivity="false">
+		<appender-ref ref="CONSOLE" />
+		<appender-ref ref="LOG_DAILY" />
+	</logger>
+	<logger name="com.micropoplar.models.search" level="DEBUG" additivity="false">
+		<appender-ref ref="CONSOLE" />
+		<appender-ref ref="LOG_DAILY_SEARCH" />
+	</logger>
+</configuration>
