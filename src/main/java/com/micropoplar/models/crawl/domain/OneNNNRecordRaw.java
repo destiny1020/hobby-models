@@ -50,13 +50,19 @@ public class OneNNNRecordRaw {
   private String title;
 
   /**
+   * 商品名称
+   */
+  @Column(length = 255, name = "cover_url")
+  private String coverUrl;
+
+  /**
    * 商品制造商
    */
   @LazyCollection(LazyCollectionOption.FALSE)
   @ElementCollection
   @CollectionTable(name = "models_crawl_1999_record_raw_maker",
       joinColumns = @JoinColumn(name = "item_id"))
-  @Column(name = "maker")
+  @Column(name = "maker", length = 50)
   private List<String> makers;
 
   /**
@@ -72,7 +78,7 @@ public class OneNNNRecordRaw {
   @ElementCollection
   @CollectionTable(name = "models_crawl_1999_record_raw_series",
       joinColumns = @JoinColumn(name = "item_id"))
-  @Column(name = "series")
+  @Column(name = "series", length = 50)
   private List<String> series;
 
   /**
@@ -80,6 +86,12 @@ public class OneNNNRecordRaw {
    */
   @Column(name = "release_date_raw", length = 40)
   private String releaseDateRaw;
+
+  /**
+   * 发售预定日
+   */
+  @Column(name = "release_reserve_date_raw", length = 40)
+  private String releaseReserveDateRaw;
 
   /**
    * 站点记录的商品代码
@@ -90,18 +102,12 @@ public class OneNNNRecordRaw {
   /**
    * 所属国家
    */
-  @Column(length = 40)
-  private String country;
-
-  /**
-   * 模型标签
-   */
   @LazyCollection(LazyCollectionOption.FALSE)
   @ElementCollection
-  @CollectionTable(name = "models_crawl_1999_record_raw_tag",
+  @CollectionTable(name = "models_crawl_1999_record_raw_country",
       joinColumns = @JoinColumn(name = "item_id"))
-  @Column(name = "tag")
-  private List<String> tags;
+  @Column(name = "country", length = 50)
+  private List<String> countries;
 
   /**
    * 模型图片
