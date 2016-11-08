@@ -1,6 +1,5 @@
 package com.micropoplar.models.crawl.domain;
 
-import java.util.Date;
 import java.util.List;
 
 import javax.persistence.CollectionTable;
@@ -12,13 +11,14 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.Table;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
 
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
 
+import com.micropoplar.models.common.response.AuditingEntity;
+
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 /**
@@ -28,10 +28,11 @@ import lombok.NoArgsConstructor;
  *
  */
 @Data
+@EqualsAndHashCode(callSuper = false)
 @NoArgsConstructor
 @Entity
 @Table(name = "models_crawl_1999_record_raw")
-public class OneNNNRecordRaw {
+public class OneNNNRecordRaw extends AuditingEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -116,20 +117,6 @@ public class OneNNNRecordRaw {
   @ElementCollection(targetClass = OneNNNRecordImage.class)
   @CollectionTable(name = "models_crawl_1999_record_raw_image",
       joinColumns = @JoinColumn(name = "item_id"))
-  private List<String> images;
-
-  /**
-   * 创建时间
-   */
-  @Temporal(TemporalType.TIMESTAMP)
-  @Column(name = "create_time")
-  private Date createTime;
-
-  /**
-   * 更新时间
-   */
-  @Temporal(TemporalType.TIMESTAMP)
-  @Column(name = "update_time")
-  private Date updateTime;
+  private List<OneNNNRecordImage> images;
 
 }

@@ -18,3 +18,5 @@ transaction-logs/
 *.xlsx
 sql/
 *.log
+crawler/
+src/main/resources/config.properties
