@@ -70,6 +70,13 @@ public class OneNNNCrawlListService {
     // 获取是否还有下一页 - 如果获得的元素length大于0则表示还有下一页
     public static final String SEL_LIST_HAS_NEXT = ".list_kensu00 .list_kensu06 ~ .list_kensu07";
 
+    // 列表元素获取
+    public static final String SEL_LIST_ITEM_COVER = "tbody > tr:first a:first img";
+    public static final String SEL_LIST_ITEM_SN_TITLE = "tbody > tr:first > td:last td:eq(1) a"; // 取第一个
+    public static final String SEL_LIST_ITEM_ATTRS = "tbody > tr:last table td:eq(1) tr"; // 属性区域
+    public static final String SEL_LIST_ITEM_ATTRS_COL_1 = "td:eq(2)"; // 第一列属性值：maker，scale，series，code
+    public static final String SEL_LIST_ITEM_ATTRS_COL_2 = "td:eq(5)"; // 第二列属性值：release
+
   }
 
 }
