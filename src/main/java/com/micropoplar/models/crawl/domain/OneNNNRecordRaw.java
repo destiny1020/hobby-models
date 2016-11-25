@@ -22,7 +22,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 /**
- * 1999.co.jp模型记录(不添加任何加工)。
+ * 1999模型详情实体(不添加任何加工)。
  * 
  * @author ruixiang
  *
@@ -51,7 +51,7 @@ public class OneNNNRecordRaw extends AuditingEntity {
   private String title;
 
   /**
-   * 商品名称
+   * 商品封绘URL
    */
   @Column(length = 255, name = "cover_url")
   private String coverUrl;
