@@ -48,6 +48,19 @@ public class OneNNNCrawlListPage {
     doc = Jsoup.parse(new URL(String.format(TMP_ITEM_LIST_URL, keyword, page)), 20000);
   }
 
+  /**
+   * 跳转到下一页。
+   * 
+   * @return
+   */
+  public OneNNNCrawlListPage navToNext() {
+    if (hasNextPage()) {
+      return new OneNNNCrawlListPage(keyword, page + 1);
+    } else {
+      throw new RuntimeException("没有下一页了");
+    }
+  }
+
   public static void main(String[] args) throws MalformedURLException, IOException {
     String keyword = "タミヤ";
     int page = 1;
