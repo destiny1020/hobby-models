@@ -2,11 +2,9 @@ package com.micropoplar.models.crawl.biz;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -15,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import com.micropoplar.models.crawl.constant.CrawlContant;
 import com.micropoplar.models.crawl.domain.OneNNNRecordListRaw;
+import com.micropoplar.models.crawl.util.CrawlConnectionUtil;
 import com.micropoplar.models.crawl.util.OneNNNCrawlerUtil;
 
 /**
@@ -55,7 +54,7 @@ public class OneNNNCrawlListPage {
    */
   public void connect() throws MalformedURLException, IOException {
     LOGGER.info(String.format("[爬虫 - 1999] 正在爬取列表页: %s - 页码: %d", keyword, page));
-    doc = Jsoup.parse(new URL(String.format(TMP_ITEM_LIST_URL, keyword, page)), 20000);
+    doc = CrawlConnectionUtil.getDocument(String.format(TMP_ITEM_LIST_URL, keyword, page));
   }
 
   /**
@@ -75,7 +74,7 @@ public class OneNNNCrawlListPage {
     String keyword = "タミヤ";
     int page = 1;
 
-    Document doc = Jsoup.parse(new URL(String.format(TMP_ITEM_LIST_URL, keyword, page)), 20000);
+    Document doc = CrawlConnectionUtil.getDocument(String.format(TMP_ITEM_LIST_URL, keyword, page));
 
     Elements elements = doc.select(OneNNNCrawlListConstant.SEL_LIST_ITEM);
     elements.forEach(element -> {
