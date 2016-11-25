@@ -26,6 +26,18 @@ import lombok.NoArgsConstructor;
 @Table(name = "models_crawl_1999_record_list_raw")
 public class OneNNNRecordListRaw extends AuditingEntity {
 
+  public OneNNNRecordListRaw(String coverUrl, String sn, String title, String makers,
+      String releaseDate, String scales, String series, String code) {
+    this.coverUrl = coverUrl;
+    this.sn = sn;
+    this.title = title;
+    this.makers = makers;
+    this.release = releaseDate;
+    this.scales = scales;
+    this.series = series;
+    this.code = code;
+  }
+
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;

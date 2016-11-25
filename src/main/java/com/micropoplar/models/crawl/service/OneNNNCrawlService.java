@@ -31,9 +31,11 @@ import org.springframework.stereotype.Service;
 
 import com.micropoplar.infra.imagesdk.service.IImageManager;
 import com.micropoplar.infra.imagesdk.service.IResponse;
+import com.micropoplar.models.crawl.constant.CrawlContant;
 import com.micropoplar.models.crawl.domain.OneNNNRecordImage;
 import com.micropoplar.models.crawl.domain.OneNNNRecordRaw;
 import com.micropoplar.models.crawl.service.biz.OneNNNImageMetadata;
+import com.micropoplar.models.crawl.util.OneNNNCrawlerUtil;
 import com.micropoplar.models.repository.OneNNNRawRecordRepository;
 
 /**
@@ -47,9 +49,9 @@ public class OneNNNCrawlService {
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-  private static final String TMP_ITEM_BASE = "http://www.1999.co.jp";
-  private static final String TMP_ITEM_URL = "http://www.1999.co.jp/%s/";
-  private static final String TMP_ITEM_IMAGES_URL = "http://www.1999.co.jp/image/%s/10/0";
+  private static final String TMP_ITEM_URL = CrawlContant.CRAWL_1999_SITE_BASE + "/%s/";
+  private static final String TMP_ITEM_IMAGES_URL =
+      CrawlContant.CRAWL_1999_SITE_BASE + "/image/%s/10/0";
 
   @Autowired
   private IImageManager imageManager;
@@ -86,7 +88,7 @@ public class OneNNNCrawlService {
 
     // 封绘小图
     Element coverElem = doc.select(OneNNNCrawlConstant.SEL_COVER).first();
-    String coverUrl = addPrefix(coverElem.attr("src"));
+    String coverUrl = OneNNNCrawlerUtil.addPrefix(coverElem.attr("src"));
     record.setCoverUrl(coverUrl);
     System.out.println(coverUrl);
 
@@ -271,7 +273,8 @@ public class OneNNNCrawlService {
     Elements largeImages = doc.select(OneNNNCrawlConstant.SEL_LARGE_IMAGES);
     assert imagesMeta.size() == largeImages.size();
     for (int i = 0; i < imagesMeta.size(); i++) {
-      imagesMeta.get(i).setLargeImageUrl(addPrefix(largeImages.get(i).attr("src")));
+      imagesMeta.get(i)
+          .setLargeImageUrl(OneNNNCrawlerUtil.addPrefix(largeImages.get(i).attr("src")));
     }
   }
 
@@ -294,25 +297,11 @@ public class OneNNNCrawlService {
       Elements images = cells.get(1).select("a > img");
       for (int j = 0; j < images.size(); j++) {
         imagesMeta.add(new OneNNNImageMetadata(idx++, type, j + 1,
-            addPrefix(images.get(j).attr("src")), "", "", "", "", ""));
+            OneNNNCrawlerUtil.addPrefix(images.get(j).attr("src")), "", "", "", "", ""));
       }
     }
 
     return imagesMeta;
-  }
-
-  /**
-   * 添加站点URL作为前缀。
-   * 
-   * @param imageHref
-   * @return
-   */
-  private String addPrefix(String imageHref) {
-    if (imageHref.startsWith("/")) {
-      imageHref = TMP_ITEM_BASE + imageHref;
-    }
-
-    return imageHref;
   }
 
   private static class OneNNNCrawlConstant {

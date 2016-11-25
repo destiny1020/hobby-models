@@ -3,14 +3,19 @@ package com.micropoplar.models.crawl.service;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.micropoplar.infra.imagesdk.service.IImageManager;
+import com.micropoplar.models.crawl.domain.OneNNNRecordListRaw;
+import com.micropoplar.models.crawl.util.OneNNNCrawlerUtil;
 
 /**
  * 1999抓取服务 - 列表搜索页。
@@ -53,6 +58,50 @@ public class OneNNNCrawlListService {
   }
 
   /**
+   * 解析列表项目。
+   * 
+   * @param doc
+   * @return
+   */
+  public List<OneNNNRecordListRaw> parseItems(Document doc) {
+    Elements items = doc.select(OneNNNCrawlListConstant.SEL_LIST_ITEM);
+    return items.stream().map(item -> {
+      // 封绘URL
+      Element cover = item.select(OneNNNCrawlListConstant.SEL_LIST_ITEM_COVER).first();
+      String coverUrl = OneNNNCrawlerUtil.addPrefix(cover.attr("src"));
+
+      // SN以及商品名称
+      Element snAndTitle = item.select(OneNNNCrawlListConstant.SEL_LIST_ITEM_SN_TITLE).first();
+      String sn = snAndTitle.attr("href").substring(1);
+      String title = snAndTitle.text().trim();
+
+      // 各种属性
+      Elements attrs = item.select(OneNNNCrawlListConstant.SEL_LIST_ITEM_ATTRS);
+
+      // 第一行 - makers & releaseDate
+      String makers =
+          attrs.get(0).select(OneNNNCrawlListConstant.SEL_LIST_ITEM_ATTRS_COL_1).text().trim();
+      String releaseDate =
+          attrs.get(0).select(OneNNNCrawlListConstant.SEL_LIST_ITEM_ATTRS_COL_2).text().trim();
+
+      // 第二行 - scale
+      String scales =
+          attrs.get(1).select(OneNNNCrawlListConstant.SEL_LIST_ITEM_ATTRS_COL_1).text().trim();
+
+      // 第三行 - series
+      String series =
+          attrs.get(2).select(OneNNNCrawlListConstant.SEL_LIST_ITEM_ATTRS_COL_1).text().trim();
+
+      // 第四行 - code
+      String code =
+          attrs.get(3).select(OneNNNCrawlListConstant.SEL_LIST_ITEM_ATTRS_COL_1).text().trim();
+
+      return new OneNNNRecordListRaw(coverUrl, sn, title, makers, releaseDate, scales, series,
+          code);
+    }).collect(Collectors.toList());
+  }
+
+  /**
    * 判断是否还存在下一页。
    * 
    * @param doc
@@ -71,9 +120,9 @@ public class OneNNNCrawlListService {
     public static final String SEL_LIST_HAS_NEXT = ".list_kensu00 .list_kensu06 ~ .list_kensu07";
 
     // 列表元素获取
-    public static final String SEL_LIST_ITEM_COVER = "tbody > tr:first a:first img";
-    public static final String SEL_LIST_ITEM_SN_TITLE = "tbody > tr:first > td:last td:eq(1) a"; // 取第一个
-    public static final String SEL_LIST_ITEM_ATTRS = "tbody > tr:last table td:eq(1) tr"; // 属性区域
+    public static final String SEL_LIST_ITEM_COVER = "tbody > tr:eq(0) a:eq(0) img";
+    public static final String SEL_LIST_ITEM_SN_TITLE = "tbody > tr:eq(0) > td:eq(1) td:eq(1) a"; // 取第一个
+    public static final String SEL_LIST_ITEM_ATTRS = "tbody > tr:eq(1) table td:eq(1) tr"; // 属性区域
     public static final String SEL_LIST_ITEM_ATTRS_COL_1 = "td:eq(2)"; // 第一列属性值：maker，scale，series，code
     public static final String SEL_LIST_ITEM_ATTRS_COL_2 = "td:eq(5)"; // 第二列属性值：release
 
