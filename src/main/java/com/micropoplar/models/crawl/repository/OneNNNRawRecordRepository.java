@@ -1,4 +1,4 @@
-package com.micropoplar.models.repository;
+package com.micropoplar.models.crawl.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

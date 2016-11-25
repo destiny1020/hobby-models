@@ -1,7 +1,9 @@
-package com.micropoplar.models.crawl;
+package com.micropoplar.models.crawl.spec;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,8 +14,8 @@ import org.jsoup.nodes.Document;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.micropoplar.models.crawl.biz.OneNNNCrawlListPage;
 import com.micropoplar.models.crawl.domain.OneNNNRecordListRaw;
-import com.micropoplar.models.crawl.service.OneNNNCrawlListService;
 
 /**
  * 列表抓取服务单元测试。
@@ -21,46 +23,52 @@ import com.micropoplar.models.crawl.service.OneNNNCrawlListService;
  * @author ruixiang
  *
  */
-public class OneNNNCrawlListSpec {
+public class OneNNNCrawlListPageSpec {
 
-  private static Document firstPage;
-  private static Document lastPage;
-  private static OneNNNCrawlListService service;
+  private static Document firstPageDoc;
+  private static Document lastPageDoc;
+  private static OneNNNCrawlListPage firstPage;
+  private static OneNNNCrawlListPage lastPage;
 
   @BeforeClass
   public static void beforeClass() throws IOException {
-    firstPage = Jsoup.parse(new File("testdata/OneNNNCrawlListService/list-first.html"), "UTF-8");
-    lastPage = Jsoup.parse(new File("testdata/OneNNNCrawlListService/list-last.html"), "UTF-8");
-    service = new OneNNNCrawlListService();
+    firstPageDoc =
+        Jsoup.parse(new File("testdata/OneNNNCrawlListService/list-first.html"), "UTF-8");
+    lastPageDoc = Jsoup.parse(new File("testdata/OneNNNCrawlListService/list-last.html"), "UTF-8");
+    firstPage = spy(new OneNNNCrawlListPage("タミヤ", 1));
+    lastPage = spy(new OneNNNCrawlListPage("タミヤ", 28));
+
+    doReturn(firstPageDoc).when(firstPage).getDoc();
+    doReturn(lastPageDoc).when(lastPage).getDoc();
   }
 
   @Test
   public void whenLoadFirstPageThenHas40ListItems() {
-    int count = service.getItemsCount(firstPage);
+    int count = firstPage.getItemsCount();
     assertThat(count, is(40));
   }
 
   @Test
   public void whenLoadFirstPageThenHasNextPage() {
-    boolean hasNext = service.hasNextPage(firstPage);
+    boolean hasNext = firstPage.hasNextPage();
     assertThat(hasNext, is(Boolean.TRUE));
   }
 
   @Test
   public void whenLoadLastPageThenHas23ListItems() {
-    int count = service.getItemsCount(lastPage);
+    int count = lastPage.getItemsCount();
     assertThat(count, is(23));
   }
 
   @Test
   public void whenLoadLastPageThenDoesNotHasNextPage() {
-    boolean hasNext = service.hasNextPage(lastPage);
+    boolean hasNext = lastPage.hasNextPage();
     assertThat(hasNext, is(Boolean.FALSE));
   }
 
   @Test
   public void whenParseFirstPageThenVerifyFirstItem() {
-    List<OneNNNRecordListRaw> items = service.parseItems(firstPage);
+    List<OneNNNRecordListRaw> items = firstPage.parseItems();
     assertThat(items.size(), is(40));
 
     OneNNNRecordListRaw firstRecord = items.get(0);

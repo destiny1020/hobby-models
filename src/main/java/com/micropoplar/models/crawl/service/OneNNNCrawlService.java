@@ -34,9 +34,9 @@ import com.micropoplar.infra.imagesdk.service.IResponse;
 import com.micropoplar.models.crawl.constant.CrawlContant;
 import com.micropoplar.models.crawl.domain.OneNNNRecordImage;
 import com.micropoplar.models.crawl.domain.OneNNNRecordRaw;
+import com.micropoplar.models.crawl.repository.OneNNNRawRecordRepository;
 import com.micropoplar.models.crawl.service.biz.OneNNNImageMetadata;
 import com.micropoplar.models.crawl.util.OneNNNCrawlerUtil;
-import com.micropoplar.models.repository.OneNNNRawRecordRepository;
 
 /**
  * 1999.co.jp抓取服务。

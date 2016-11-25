@@ -1,4 +1,4 @@
-package com.micropoplar.models.crawl.service;
+package com.micropoplar.models.crawl.biz;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -10,30 +10,43 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
-import com.micropoplar.infra.imagesdk.service.IImageManager;
+import com.micropoplar.models.crawl.constant.CrawlContant;
 import com.micropoplar.models.crawl.domain.OneNNNRecordListRaw;
 import com.micropoplar.models.crawl.util.OneNNNCrawlerUtil;
 
 /**
- * 1999抓取服务 - 列表搜索页。
+ * 1999抓取服务 - 列表页。
  * 
  * @author ruixiang
  *
  */
-@Service
-public class OneNNNCrawlListService {
+public class OneNNNCrawlListPage {
 
   /**
    * 关键字，页码(从1开始)
    */
-  private static final String TMP_ITEM_LIST_URL =
-      "http://www.1999.co.jp/search?typ1_c=102&cat=plamo&target=Make&searchkey=%s&spage=%d";
+  private static final String TMP_ITEM_LIST_URL = CrawlContant.CRAWL_1999_SITE_BASE
+      + "/search?typ1_c=102&cat=plamo&target=Make&searchkey=%s&spage=%d";
 
-  @Autowired
-  private IImageManager imageManager;
+  private Document doc;
+  private String keyword;
+  private int page;
+
+  public OneNNNCrawlListPage(String keyword, int page) {
+    this.keyword = keyword;
+    this.page = page;
+  }
+
+  /**
+   * 访问链接获取HTML。
+   * 
+   * @throws IOException
+   * @throws MalformedURLException
+   */
+  public void connect() throws MalformedURLException, IOException {
+    doc = Jsoup.parse(new URL(String.format(TMP_ITEM_LIST_URL, keyword, page)), 20000);
+  }
 
   public static void main(String[] args) throws MalformedURLException, IOException {
     String keyword = "タミヤ";
@@ -53,8 +66,8 @@ public class OneNNNCrawlListService {
    * @param doc
    * @return
    */
-  public int getItemsCount(Document doc) {
-    return doc.select(OneNNNCrawlListConstant.SEL_LIST_ITEM).size();
+  public int getItemsCount() {
+    return getDoc().select(OneNNNCrawlListConstant.SEL_LIST_ITEM).size();
   }
 
   /**
@@ -63,8 +76,8 @@ public class OneNNNCrawlListService {
    * @param doc
    * @return
    */
-  public List<OneNNNRecordListRaw> parseItems(Document doc) {
-    Elements items = doc.select(OneNNNCrawlListConstant.SEL_LIST_ITEM);
+  public List<OneNNNRecordListRaw> parseItems() {
+    Elements items = getDoc().select(OneNNNCrawlListConstant.SEL_LIST_ITEM);
     return items.stream().map(item -> {
       // 封绘URL
       Element cover = item.select(OneNNNCrawlListConstant.SEL_LIST_ITEM_COVER).first();
@@ -107,8 +120,12 @@ public class OneNNNCrawlListService {
    * @param doc
    * @return
    */
-  public boolean hasNextPage(Document doc) {
-    return doc.select(OneNNNCrawlListConstant.SEL_LIST_HAS_NEXT).size() > 0;
+  public boolean hasNextPage() {
+    return getDoc().select(OneNNNCrawlListConstant.SEL_LIST_HAS_NEXT).size() > 0;
+  }
+
+  public Document getDoc() {
+    return this.doc;
   }
 
   public static class OneNNNCrawlListConstant {
