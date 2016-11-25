@@ -5,6 +5,8 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 
 import com.micropoplar.models.common.response.AuditingEntity;
@@ -20,11 +22,17 @@ import lombok.NoArgsConstructor;
  *
  */
 @Data
-@EqualsAndHashCode(callSuper = false)
+@EqualsAndHashCode(callSuper = false, exclude = "id")
 @NoArgsConstructor
 @Entity
 @Table(name = "models_crawl_1999_record_list_raw")
+@NamedQueries(@NamedQuery(name = OneNNNRecordListRaw.FIND_BY_SN,
+    query = OneNNNRecordListRaw.FIND_BY_SN_QL))
 public class OneNNNRecordListRaw extends AuditingEntity {
+
+  public static final String FIND_BY_SN = "OneNNNRecordListRaw.findBySn";
+  public static final String FIND_BY_SN_QL =
+      "select r from OneNNNRecordListRaw r where r.sn = ?1 order by r.createdTime desc";
 
   public OneNNNRecordListRaw(String coverUrl, String sn, String title, String makers,
       String releaseDate, String scales, String series, String code) {
@@ -45,7 +53,7 @@ public class OneNNNRecordListRaw extends AuditingEntity {
   /**
    * 商品站点SN
    */
-  @Column(length = 40)
+  @Column(length = 40, nullable = false)
   private String sn;
 
   /**

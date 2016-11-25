@@ -10,6 +10,8 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.micropoplar.models.crawl.constant.CrawlContant;
 import com.micropoplar.models.crawl.domain.OneNNNRecordListRaw;
@@ -29,13 +31,20 @@ public class OneNNNCrawlListPage {
   private static final String TMP_ITEM_LIST_URL = CrawlContant.CRAWL_1999_SITE_BASE
       + "/search?typ1_c=102&cat=plamo&target=Make&searchkey=%s&spage=%d";
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(OneNNNCrawlListPage.class);
+
   private Document doc;
   private String keyword;
   private int page;
 
-  public OneNNNCrawlListPage(String keyword, int page) {
+  private OneNNNCrawlListPage(String keyword, int page) {
     this.keyword = keyword;
     this.page = page;
+  }
+
+  public OneNNNCrawlListPage(String keyword) {
+    this.keyword = keyword;
+    this.page = 0;
   }
 
   /**
@@ -45,6 +54,7 @@ public class OneNNNCrawlListPage {
    * @throws MalformedURLException
    */
   public void connect() throws MalformedURLException, IOException {
+    LOGGER.info(String.format("[爬虫 - 1999] 正在爬取列表页: %s - 页码: %d", keyword, page));
     doc = Jsoup.parse(new URL(String.format(TMP_ITEM_LIST_URL, keyword, page)), 20000);
   }
 
@@ -134,6 +144,10 @@ public class OneNNNCrawlListPage {
    * @return
    */
   public boolean hasNextPage() {
+    if (page == 0) {
+      return Boolean.TRUE;
+    }
+
     return getDoc().select(OneNNNCrawlListConstant.SEL_LIST_HAS_NEXT).size() > 0;
   }
 

@@ -42,9 +42,9 @@ public class OneNNNCrawlListPageSpec {
     firstPageDoc = Jsoup.parse(new File("testdata/OneNNNCrawlListPage/list-first.html"), "UTF-8");
     secondPageDoc = Jsoup.parse(new File("testdata/OneNNNCrawlListPage/list-second.html"), "UTF-8");
     lastPageDoc = Jsoup.parse(new File("testdata/OneNNNCrawlListPage/list-last.html"), "UTF-8");
-    firstPage = spy(new OneNNNCrawlListPage("タミヤ", 1));
-    secondPage = spy(new OneNNNCrawlListPage("タミヤ", 2));
-    lastPage = spy(new OneNNNCrawlListPage("タミヤ", 28));
+    firstPage = spy(new OneNNNCrawlListPage("タミヤ"));
+    secondPage = spy(new OneNNNCrawlListPage("タミヤ"));
+    lastPage = spy(new OneNNNCrawlListPage("タミヤ"));
 
     doReturn(firstPageDoc).when(firstPage).getDoc();
     doReturn(secondPageDoc).when(secondPage).getDoc();
