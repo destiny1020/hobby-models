@@ -25,24 +25,24 @@ import com.micropoplar.models.crawl.util.OneNNNCrawlerUtil;
 public class OneNNNCrawlListPage {
 
   /**
-   * 关键字，页码(从1开始)
+   * 关键字，页码(从1开始) - SN - Page
    */
-  private static final String TMP_ITEM_LIST_URL = CrawlContant.CRAWL_1999_SITE_BASE
-      + "/search?typ1_c=102&cat=plamo&target=Make&searchkey=%s&spage=%d";
+  private static final String TMP_ITEM_LIST_URL =
+      CrawlContant.CRAWL_1999_SITE_BASE + "/list/%s/0/%d";
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OneNNNCrawlListPage.class);
 
   private Document doc;
-  private String keyword;
+  private String sn;
   private int page;
 
-  private OneNNNCrawlListPage(String keyword, int page) {
-    this.keyword = keyword;
+  private OneNNNCrawlListPage(String sn, int page) {
+    this.sn = sn;
     this.page = page;
   }
 
-  public OneNNNCrawlListPage(String keyword) {
-    this.keyword = keyword;
+  public OneNNNCrawlListPage(String sn) {
+    this.sn = sn;
     this.page = 0;
   }
 
@@ -53,8 +53,8 @@ public class OneNNNCrawlListPage {
    * @throws MalformedURLException
    */
   public void connect() throws MalformedURLException, IOException {
-    LOGGER.info(String.format("[爬虫 - 1999] 正在爬取列表页: %s - 页码: %d", keyword, page));
-    doc = CrawlConnectionUtil.getDocument(String.format(TMP_ITEM_LIST_URL, keyword, page));
+    LOGGER.info(String.format("[爬虫 - 1999] 正在爬取列表页: %s - 页码: %d", sn, page));
+    doc = CrawlConnectionUtil.getDocument(String.format(TMP_ITEM_LIST_URL, sn, page));
   }
 
   /**
@@ -64,7 +64,7 @@ public class OneNNNCrawlListPage {
    */
   public OneNNNCrawlListPage navToNext() {
     if (hasNextPage()) {
-      return new OneNNNCrawlListPage(keyword, page + 1);
+      return new OneNNNCrawlListPage(sn, page + 1);
     } else {
       throw new RuntimeException("没有下一页了");
     }
@@ -100,6 +100,7 @@ public class OneNNNCrawlListPage {
    */
   public List<OneNNNRecordListRaw> parseItems() {
     Elements items = getDoc().select(OneNNNCrawlListConstant.SEL_LIST_ITEM);
+    LOGGER.info(String.format("[爬虫 - 1999] 正在分析: %s - 页码: %d 的 %d 条记录", sn, page, items.size()));
     return items.stream().map(item -> {
       // 封绘URL
       Element cover = item.select(OneNNNCrawlListConstant.SEL_LIST_ITEM_COVER).first();
