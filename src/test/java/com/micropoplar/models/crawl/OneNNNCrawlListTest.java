@@ -34,7 +34,8 @@ public class OneNNNCrawlListTest {
   @Transactional
   @Rollback(false)
   public void testSaveTamiyaPages() throws MalformedURLException, IOException {
-    OneNNNCrawlListPage pageCrawler = new OneNNNCrawlListPage("タミヤ");
+    // OneNNNCrawlListPage pageCrawler = new OneNNNCrawlListPage("タミヤ");
+    OneNNNCrawlListPage pageCrawler = new OneNNNCrawlListPage("ハセガワ");
     do {
       pageCrawler = pageCrawler.navToNext();
       pageCrawler.connect();
