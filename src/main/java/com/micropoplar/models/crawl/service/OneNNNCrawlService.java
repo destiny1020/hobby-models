@@ -6,7 +6,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
-import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
@@ -38,7 +37,6 @@ import com.micropoplar.infra.imagesdk.service.IResponse;
 import com.micropoplar.models.crawl.constant.CrawlContant;
 import com.micropoplar.models.crawl.domain.OneNNNRecordImage;
 import com.micropoplar.models.crawl.domain.OneNNNRecordRaw;
-import com.micropoplar.models.crawl.repository.OneNNNRawRecordRepository;
 import com.micropoplar.models.crawl.service.biz.OneNNNImageMetadata;
 import com.micropoplar.models.crawl.util.CrawlConnectionUtil;
 import com.micropoplar.models.crawl.util.OneNNNCrawlerUtil;
@@ -66,9 +64,6 @@ public class OneNNNCrawlService {
 
   @Autowired
   private IImageManager imageManager;
-
-  @Autowired
-  private OneNNNRawRecordRepository rawRecordRepo;
 
   /**
    * 判断当前爬取记录是否和历史爬取记录相等。
@@ -109,7 +104,7 @@ public class OneNNNCrawlService {
    * @throws MalformedURLException
    * @throws IOException
    */
-  public void crawl(String sn) throws MalformedURLException, IOException {
+  public OneNNNRecordRaw crawl(String sn) throws MalformedURLException, IOException {
     logger.info("[爬虫]商品详情页: " + sn);
 
     Document doc = CrawlConnectionUtil.getDocument(String.format(TMP_ITEM_URL, sn));
@@ -240,10 +235,12 @@ public class OneNNNCrawlService {
     }
 
     if (!equalsInfo.getLeft().booleanValue() || !equalsInfo.getRight().booleanValue()) {
-      rawRecordRepo.save(record);
+      record.setShouldSave(Boolean.TRUE);
     } else {
       logger.info(String.format("[爬虫 - 基本] SN: %s 已经被爬取了，且信息并没有发生变化，无需保存", sn));
     }
+
+    return record;
   }
 
   private void coreCrawlImage(String sn, OneNNNImageMetadata meta, boolean isSmall)
@@ -273,7 +270,7 @@ public class OneNNNCrawlService {
           out.close();
           is.close();
           break;
-        } catch (SocketTimeoutException ste) {
+        } catch (Exception e) {
           downloadRetryTimes++;
           if (downloadRetryTimes >= RETRY_MAX) {
             throw new RuntimeException(String.format("下载图片失败: %s - %s", sn, targetUrl));
@@ -302,7 +299,7 @@ public class OneNNNCrawlService {
             uploadRetryTimes + 1, isSmall ? "小" : "大", meta.getIdx(), localImageName));
         imageUrl = uploadToQiniu(sn, imageBytes);
         break;
-      } catch (SocketTimeoutException ste) {
+      } catch (Exception e) {
         uploadRetryTimes++;
         if (uploadRetryTimes >= RETRY_MAX) {
           throw new RuntimeException(String.format("上传图片失败: %s - %s", sn, localImageName));
@@ -317,7 +314,7 @@ public class OneNNNCrawlService {
     }
   }
 
-  private String uploadToQiniu(String sn, byte[] imageBytes) throws SocketTimeoutException {
+  private String uploadToQiniu(String sn, byte[] imageBytes) {
     String key = "crawler/onennn/" + sn + "/" + UUID.randomUUID().toString();
     IResponse response = imageManager.simpleUpload("models-biz", key, imageBytes);
     String imageUrl = response.getDownloadUrl();

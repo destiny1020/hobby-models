@@ -2,6 +2,8 @@ package com.micropoplar.models.crawl;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -14,6 +16,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.transaction.TestTransaction;
 
 import com.micropoplar.models.crawl.domain.OneNNNRecordListRaw;
+import com.micropoplar.models.crawl.domain.OneNNNRecordRaw;
+import com.micropoplar.models.crawl.repository.OneNNNRawRecordRepository;
 import com.micropoplar.models.crawl.repository.OneNNNRecordListRawRepository;
 import com.micropoplar.models.crawl.service.OneNNNCrawlService;
 
@@ -32,6 +36,9 @@ public class OneNNNCrawlTest extends AbstractTransactionalJUnit4SpringContextTes
 
   @Autowired
   private OneNNNRecordListRawRepository rawListRecordRepo;
+
+  @Autowired
+  private OneNNNRawRecordRepository rawRecordRepo;
 
   @Test
   public void testCrawlSingleItem() throws MalformedURLException, IOException {
@@ -73,15 +80,21 @@ public class OneNNNCrawlTest extends AbstractTransactionalJUnit4SpringContextTes
       TestTransaction.start();
 
       tasks = rawListRecordRepo.findByRemainingTask(new PageRequest(page, size));
-      tasks.getContent().parallelStream().forEach(task -> {
+      List<OneNNNRecordRaw> crawledRecords = tasks.getContent().parallelStream().map(task -> {
+        OneNNNRecordRaw crawledRecord = null;
         try {
-          crawlService.crawl(task.getSn());
-          task.setHasCrawled(Boolean.TRUE);
+          crawledRecord = crawlService.crawl(task.getSn());
         } catch (Exception e) {
+          // TODO Auto-generated catch block
           e.printStackTrace();
         }
-      });
+        task.setHasCrawled(Boolean.TRUE);
+        return crawledRecord;
+      }).filter(crawledRecord -> {
+        return crawledRecord != null && crawledRecord.getShouldSave().booleanValue();
+      }).collect(Collectors.toList());
 
+      rawRecordRepo.save(crawledRecords);
       rawListRecordRepo.save(tasks);
       TestTransaction.flagForCommit();
       TestTransaction.end();

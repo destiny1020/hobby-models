@@ -13,6 +13,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
@@ -125,5 +126,8 @@ public class OneNNNRecordRaw extends AuditingEntity {
   @CollectionTable(name = "models_crawl_1999_record_raw_image",
       joinColumns = @JoinColumn(name = "item_id"))
   private List<OneNNNRecordImage> images;
+
+  @Transient
+  private Boolean shouldSave = false;
 
 }
