@@ -19,8 +19,11 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import javax.persistence.EntityManager;
+import javax.persistence.NoResultException;
+
 import org.apache.commons.io.IOUtils;
-import org.jsoup.Jsoup;
+import org.apache.commons.lang3.tuple.Pair;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -36,10 +39,11 @@ import com.micropoplar.models.crawl.domain.OneNNNRecordImage;
 import com.micropoplar.models.crawl.domain.OneNNNRecordRaw;
 import com.micropoplar.models.crawl.repository.OneNNNRawRecordRepository;
 import com.micropoplar.models.crawl.service.biz.OneNNNImageMetadata;
+import com.micropoplar.models.crawl.util.CrawlConnectionUtil;
 import com.micropoplar.models.crawl.util.OneNNNCrawlerUtil;
 
 /**
- * 1999.co.jp抓取服务。
+ * 1999抓取服务。
  * 
  * @author ruixiang
  *
@@ -54,28 +58,57 @@ public class OneNNNCrawlService {
       CrawlContant.CRAWL_1999_SITE_BASE + "/image/%s/10/0";
 
   @Autowired
+  private EntityManager em;
+
+  @Autowired
   private IImageManager imageManager;
 
   @Autowired
   private OneNNNRawRecordRepository rawRecordRepo;
 
-  public static void main(String[] args) throws MalformedURLException, IOException {
-    Document doc =
-        Jsoup.parse(new URL(String.format("http://www.1999.co.jp/image/10088591/10/0")), 20000);
+  /**
+   * 判断当前爬取记录是否和历史爬取记录相等。
+   * 
+   * @param nowRecord
+   * @param imagesMeta
+   * @return
+   */
+  public Pair<Boolean, Boolean> isTheSameWithLatestItem(OneNNNRecordRaw nowRecord,
+      List<OneNNNImageMetadata> imagesMeta) {
+    try {
+      OneNNNRecordRaw latestRecord =
+          em.createNamedQuery(OneNNNRecordRaw.FIND_BY_SN, OneNNNRecordRaw.class)
+              .setParameter(1, nowRecord.getSn()).setMaxResults(1).getSingleResult();
 
-    Elements images = doc.select("#imgAll img");
-    images.forEach(image -> {
-      System.out.println(image.attr("src"));
-    });
+      boolean fieldsEqual = nowRecord.equals(latestRecord);
+      boolean imagesCountEqual = imagesMeta.size() == latestRecord.getImages().size();
+
+      if (!fieldsEqual) {
+        logger.info(String.format("[爬虫 - 基本] SN: %s %s - 基本信息发生了改变", nowRecord.getSn(),
+            nowRecord.getTitle()));
+      }
+      if (!imagesCountEqual) {
+        logger.info(String.format("[爬虫 - 基本] SN: %s %s - 图片数量发生了改变", nowRecord.getSn(),
+            nowRecord.getTitle()));
+      }
+
+      return Pair.of(fieldsEqual, imagesCountEqual);
+    } catch (NoResultException nre) {
+      return Pair.of(Boolean.FALSE, Boolean.FALSE);
+    }
   }
 
+  /**
+   * 爬取1999详情数据。
+   * 
+   * @param sn
+   * @throws MalformedURLException
+   * @throws IOException
+   */
   public void crawl(String sn) throws MalformedURLException, IOException {
     logger.info("[爬虫]商品详情页: " + sn);
 
-    Document doc = Jsoup.connect(String.format(TMP_ITEM_URL, sn))
-        .userAgent(
-            "Mozilla/5.0 (X11; U; Linux i586; en-US; rv:1.7.3) Gecko/20040924 Epiphany/1.4.4 (Ubuntu)")
-        .timeout(50000).get();
+    Document doc = CrawlConnectionUtil.getDocument(String.format(TMP_ITEM_URL, sn));
 
     OneNNNRecordRaw record = new OneNNNRecordRaw();
     record.setSn(sn);
@@ -84,13 +117,11 @@ public class OneNNNCrawlService {
     Element titleElem = doc.select(OneNNNCrawlConstant.SEL_TITLE).first();
     String title = titleElem.text();
     record.setTitle(title);
-    System.out.println(title);
 
     // 封绘小图
     Element coverElem = doc.select(OneNNNCrawlConstant.SEL_COVER).first();
     String coverUrl = OneNNNCrawlerUtil.addPrefix(coverElem.attr("src"));
     record.setCoverUrl(coverUrl);
-    System.out.println(coverUrl);
 
     // 制造商，比例，发售日，商品代码
     Elements meta1Elem = doc.select(OneNNNCrawlConstant.SEL_META_1);
@@ -121,14 +152,14 @@ public class OneNNNCrawlService {
     }
 
     // 发售日
-    List<String> releaseDates = meta1Map.get(OneNNNCrawlConstant.KEY_RELEASE_RESERVE_DATE);
+    List<String> releaseDates = meta1Map.get(OneNNNCrawlConstant.KEY_RELEASE_DATE);
     if (releaseDates != null && releaseDates.size() == 1) {
       record.setReleaseDateRaw(releaseDates.get(0));
       logger.info(String.format("[爬虫 - 基本] SN: %s, 发售日: %s", sn, releaseDates));
     }
 
     // 发售预定日
-    List<String> releaseReserveDates = meta1Map.get(OneNNNCrawlConstant.KEY_RELEASE_DATE);
+    List<String> releaseReserveDates = meta1Map.get(OneNNNCrawlConstant.KEY_RELEASE_RESERVE_DATE);
     if (releaseReserveDates != null && releaseReserveDates.size() == 1) {
       record.setReleaseReserveDateRaw(releaseReserveDates.get(0));
       logger.info(String.format("[爬虫 - 基本] SN: %s, 发售预定日: %s", sn, releaseReserveDates));
@@ -137,7 +168,7 @@ public class OneNNNCrawlService {
     // 商品代码
     List<String> codes = meta1Map.get(OneNNNCrawlConstant.KEY_CODE);
     if (codes != null && codes.size() == 1) {
-      System.out.println(codes);
+      record.setCode(codes.get(0));
       logger.info(String.format("[爬虫 - 基本] SN: %s, 商品代码: %s", sn, codes));
     }
 
@@ -150,11 +181,18 @@ public class OneNNNCrawlService {
       return linkElem.select("a").stream().map(Element::text).collect(Collectors.toList());
     }));
 
-    // 商品系列
-    List<String> series = meta2Map.get(OneNNNCrawlConstant.KEY_SERIES);
+    // 商品系列 - 区域1或者区域2
+    List<String> series = meta1Map.get(OneNNNCrawlConstant.KEY_SERIES_1);
     if (series != null && series.size() > 0) {
       record.setSeries(series);
       logger.info(String.format("[爬虫 - 基本] SN: %s, 系列: %s", sn, series));
+    }
+    if (series == null || series.size() == 0) {
+      series = meta2Map.get(OneNNNCrawlConstant.KEY_SERIES_2);
+      if (series != null && series.size() > 0) {
+        record.setSeries(series);
+        logger.info(String.format("[爬虫 - 基本] SN: %s, 系列: %s", sn, series));
+      }
     }
 
     // 国家
@@ -168,33 +206,40 @@ public class OneNNNCrawlService {
 
     // 访问图片页得到完整的图片信息
     addLargeImageUrl(sn, imagesMeta);
-    // imagesMeta.forEach(System.out::println);
 
-    // 创建保存目录
-    Path path = Paths.get(String.format("crawler/images/%s", sn));
-    Files.createDirectories(path);
+    // 只有在爬取的信息和上次不同时，才会调用保存操作
+    Pair<Boolean, Boolean> equalsInfo = this.isTheSameWithLatestItem(record, imagesMeta);
+    if (!equalsInfo.getRight().booleanValue()) {
+      // 创建保存目录
+      Path path = Paths.get(String.format("crawler/images/%s", sn));
+      Files.createDirectories(path);
 
-    imagesMeta.parallelStream().forEach(meta -> {
-      try {
-        // 小图
-        coreCrawlImage(sn, meta, true);
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
+      imagesMeta.parallelStream().forEach(meta -> {
+        try {
+          // 小图
+          coreCrawlImage(sn, meta, true);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
 
-      try {
-        // 大图
-        coreCrawlImage(sn, meta, false);
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
-    });
+        try {
+          // 大图
+          coreCrawlImage(sn, meta, false);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
 
-    // imagesMeta.forEach(System.out::println);
-    // 转换成实体类型
-    record.setImages(imagesMeta.stream().map(OneNNNRecordImage::new).collect(Collectors.toList()));
+        // 转换成实体类型
+        record.setImages(
+            imagesMeta.stream().map(OneNNNRecordImage::new).collect(Collectors.toList()));
+      });
+    }
 
-    rawRecordRepo.save(record);
+    if (!equalsInfo.getLeft().booleanValue() || !equalsInfo.getRight().booleanValue()) {
+      rawRecordRepo.save(record);
+    } else {
+      logger.info(String.format("[爬虫 - 基本] SN: %s 已经被爬取了，且信息并没有发生变化，无需保存", sn));
+    }
   }
 
   private void coreCrawlImage(String sn, OneNNNImageMetadata meta, boolean isSmall)
@@ -265,10 +310,7 @@ public class OneNNNCrawlService {
       throws IOException {
     logger.info("[爬虫]商品图片页: " + sn);
 
-    Document doc = Jsoup.connect(String.format(TMP_ITEM_IMAGES_URL, sn))
-        .userAgent(
-            "Mozilla/5.0 (X11; U; Linux i586; en-US; rv:1.7.3) Gecko/20040924 Epiphany/1.4.4 (Ubuntu)")
-        .timeout(50000).get();
+    Document doc = CrawlConnectionUtil.getDocument(String.format(TMP_ITEM_IMAGES_URL, sn));
 
     Elements largeImages = doc.select(OneNNNCrawlConstant.SEL_LARGE_IMAGES);
     assert imagesMeta.size() == largeImages.size();
@@ -331,8 +373,10 @@ public class OneNNNCrawlService {
     public static final String KEY_RELEASE_RESERVE_DATE = "発売予定日";
     // 商品代码
     public static final String KEY_CODE = "商品コード";
-    // 商品系列
-    public static final String KEY_SERIES = "商品シリーズ";
+    // 商品系列 - 区域1
+    public static final String KEY_SERIES_1 = "シリーズ";
+    // 商品系列 - 区域2
+    public static final String KEY_SERIES_2 = "商品シリーズ";
     // 国家
     public static final String KEY_COUNTRY = "国";
 

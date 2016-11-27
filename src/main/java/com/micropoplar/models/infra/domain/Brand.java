@@ -19,7 +19,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @Entity
-@Table(name = "models_common_brand")
+@Table(name = "models_infra_brand")
 public class Brand {
 
   public Brand(String nameJapanese) {

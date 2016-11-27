@@ -98,4 +98,10 @@ public class OneNNNRecordListRaw extends AuditingEntity {
   @Column(length = 255, name = "release_date")
   private String release;
 
+  /**
+   * 是否已经爬取过
+   */
+  @Column(name = "has_crawled", nullable = false)
+  private Boolean hasCrawled = false;
+
 }

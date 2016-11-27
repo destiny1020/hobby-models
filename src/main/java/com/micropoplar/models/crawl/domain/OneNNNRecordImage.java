@@ -5,6 +5,7 @@ import javax.persistence.Embeddable;
 
 import com.micropoplar.models.crawl.service.biz.OneNNNImageMetadata;
 
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
@@ -15,6 +16,7 @@ import lombok.NoArgsConstructor;
  */
 @Embeddable
 @NoArgsConstructor
+@Data
 public class OneNNNRecordImage {
 
   public OneNNNRecordImage(OneNNNImageMetadata meta) {

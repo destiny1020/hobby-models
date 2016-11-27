@@ -10,6 +10,8 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 
 import org.hibernate.annotations.LazyCollection;
@@ -28,11 +30,16 @@ import lombok.NoArgsConstructor;
  *
  */
 @Data
-@EqualsAndHashCode(callSuper = false)
+@EqualsAndHashCode(callSuper = false, exclude = {"id", "images"})
 @NoArgsConstructor
 @Entity
 @Table(name = "models_crawl_1999_record_raw")
+@NamedQueries(@NamedQuery(name = OneNNNRecordRaw.FIND_BY_SN, query = OneNNNRecordRaw.FIND_BY_SN_QL))
 public class OneNNNRecordRaw extends AuditingEntity {
+
+  public static final String FIND_BY_SN = "OneNNNRecordRaw.findBySn";
+  public static final String FIND_BY_SN_QL =
+      "select r from OneNNNRecordRaw r where r.sn = ?1 order by r.createdTime desc";
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
