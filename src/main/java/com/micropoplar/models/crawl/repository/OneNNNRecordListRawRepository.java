@@ -1,5 +1,7 @@
 package com.micropoplar.models.crawl.repository;
 
+import javax.transaction.Transactional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,6 +15,7 @@ import com.micropoplar.models.crawl.domain.OneNNNRecordListRaw;
  * @author ruixiang
  *
  */
+@Transactional
 public interface OneNNNRecordListRawRepository extends JpaRepository<OneNNNRecordListRaw, Long> {
 
   /**

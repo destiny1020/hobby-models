@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 
 import javax.persistence.EntityManager;
 import javax.persistence.NoResultException;
+import javax.transaction.Transactional;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -49,6 +50,7 @@ import com.micropoplar.models.crawl.util.OneNNNCrawlerUtil;
  *
  */
 @Service
+@Transactional
 public class OneNNNCrawlService {
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -56,6 +58,8 @@ public class OneNNNCrawlService {
   private static final String TMP_ITEM_URL = CrawlContant.CRAWL_1999_SITE_BASE + "/%s/";
   private static final String TMP_ITEM_IMAGES_URL =
       CrawlContant.CRAWL_1999_SITE_BASE + "/image/%s/10/0";
+
+  private static final int RETRY_MAX = 5;
 
   @Autowired
   private EntityManager em;
@@ -252,23 +256,29 @@ public class OneNNNCrawlService {
     if (!Files.exists(Paths.get(localImageName))) {
       // 还不存在
       String targetUrl = isSmall ? meta.getSmallImageUrl() : meta.getLargeImageUrl();
-      logger.info(String.format("[爬虫 - 图片] SN: %s 正在下载%s图: %d - %s", sn, isSmall ? "小" : "大",
-          meta.getIdx(), targetUrl));
-      FileOutputStream out = new FileOutputStream(localImageName);
-      URLConnection conn = new URL(targetUrl).openConnection();
-      conn.setConnectTimeout(10000);
-      try {
-        conn.connect();
-        InputStream is = conn.getInputStream();
-        imageBytes = IOUtils.toByteArray(is);
-        out.write(imageBytes);
-        out.flush();
-        out.close();
-        is.close();
-      } catch (SocketTimeoutException ste) {
-        logger.error(String.format("[爬虫 - 图片] SN: %s 超时 - 下载%s图: %d - %s", sn, isSmall ? "小" : "大",
-            meta.getIdx(), targetUrl));
-        throw new RuntimeException("下载图片失败");
+
+      int downloadRetryTimes = 0;
+      while (downloadRetryTimes < RETRY_MAX) {
+        logger.info(String.format("[爬虫 - 图片] SN: %s 第%d次尝试下载%s图: %d - %s", sn,
+            downloadRetryTimes + 1, isSmall ? "小" : "大", meta.getIdx(), targetUrl));
+        FileOutputStream out = new FileOutputStream(localImageName);
+        URLConnection conn = new URL(targetUrl).openConnection();
+        conn.setConnectTimeout(10000);
+        try {
+          conn.connect();
+          InputStream is = conn.getInputStream();
+          imageBytes = IOUtils.toByteArray(is);
+          out.write(imageBytes);
+          out.flush();
+          out.close();
+          is.close();
+          break;
+        } catch (SocketTimeoutException ste) {
+          downloadRetryTimes++;
+          if (downloadRetryTimes >= RETRY_MAX) {
+            throw new RuntimeException(String.format("下载图片失败: %s - %s", sn, targetUrl));
+          }
+        }
       }
     } else {
       // 已经存在
@@ -283,9 +293,23 @@ public class OneNNNCrawlService {
     }
 
     // 上传图片到七牛
-    logger.error(String.format("[爬虫 - 图片] SN: %s 上传%s图到七牛: %d - %s", sn, isSmall ? "小" : "大",
-        meta.getIdx(), localImageName));
-    String imageUrl = uploadToQiniu(sn, imageBytes);
+    String imageUrl = "";
+
+    int uploadRetryTimes = 0;
+    while (uploadRetryTimes < RETRY_MAX) {
+      try {
+        logger.info(String.format("[爬虫 - 图片] SN: %s 第%d次尝试: 上传%s图到七牛: %d - %s", sn,
+            uploadRetryTimes + 1, isSmall ? "小" : "大", meta.getIdx(), localImageName));
+        imageUrl = uploadToQiniu(sn, imageBytes);
+        break;
+      } catch (SocketTimeoutException ste) {
+        uploadRetryTimes++;
+        if (uploadRetryTimes >= RETRY_MAX) {
+          throw new RuntimeException(String.format("上传图片失败: %s - %s", sn, localImageName));
+        }
+      }
+    }
+
     if (isSmall) {
       meta.setSmallQiniuImageUrl(imageUrl);
     } else {
@@ -293,7 +317,7 @@ public class OneNNNCrawlService {
     }
   }
 
-  private String uploadToQiniu(String sn, byte[] imageBytes) {
+  private String uploadToQiniu(String sn, byte[] imageBytes) throws SocketTimeoutException {
     String key = "crawler/onennn/" + sn + "/" + UUID.randomUUID().toString();
     IResponse response = imageManager.simpleUpload("models-biz", key, imageBytes);
     String imageUrl = response.getDownloadUrl();

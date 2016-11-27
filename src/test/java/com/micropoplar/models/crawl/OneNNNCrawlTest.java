@@ -57,7 +57,7 @@ public class OneNNNCrawlTest extends AbstractTransactionalJUnit4SpringContextTes
    */
   @Test
   public void testCrawlItems() {
-    int size = 50;
+    int size = 10;
 
     // TODO: 重构
     Page<OneNNNRecordListRaw> tasks =
@@ -65,20 +65,26 @@ public class OneNNNCrawlTest extends AbstractTransactionalJUnit4SpringContextTes
     int totalPages = tasks.getTotalPages();
 
     for (int page = 0; page < totalPages; page++) {
+      System.out.println("获取下一页的数据: " + page);
+
+      if (TestTransaction.isActive()) {
+        TestTransaction.end();
+      }
+      TestTransaction.start();
+
       tasks = rawListRecordRepo.findByRemainingTask(new PageRequest(page, size));
       tasks.getContent().parallelStream().forEach(task -> {
         try {
           crawlService.crawl(task.getSn());
           task.setHasCrawled(Boolean.TRUE);
-          rawListRecordRepo.save(task);
         } catch (Exception e) {
           e.printStackTrace();
         }
       });
 
+      rawListRecordRepo.save(tasks);
       TestTransaction.flagForCommit();
       TestTransaction.end();
-      TestTransaction.start();
     }
 
   }

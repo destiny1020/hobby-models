@@ -5,6 +5,8 @@ import java.util.Random;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.micropoplar.models.crawl.constant.CrawlUserAgentConstant;
 
@@ -18,6 +20,10 @@ public class CrawlConnectionUtil {
 
   private static final Random RAND = new Random();
 
+  private static final int RETRY_MAX = 5;
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(CrawlConnectionUtil.class);
+
   /**
    * 根据URL获取HTML。
    * 
@@ -26,8 +32,23 @@ public class CrawlConnectionUtil {
    * @throws IOException
    */
   public static Document getDocument(String url) throws IOException {
-    return Jsoup.connect(url).userAgent(randomUserAgent()).referrer(randomReferrer()).timeout(20000)
-        .get();
+    Document document = null;
+    int retryTimes = 0;
+    while (retryTimes < RETRY_MAX) {
+      try {
+        LOGGER.debug(String.format("[爬虫 - HTML] 第%d次尝试获取HTML: %s", retryTimes + 1, url));
+        document = Jsoup.connect(url).userAgent(randomUserAgent()).referrer(randomReferrer())
+            .timeout(20000).get();
+        return document;
+      } catch (IOException ioe) {
+        retryTimes++;
+        if (retryTimes >= RETRY_MAX) {
+          throw new RuntimeException(String.format("获取URL失败: %s", url));
+        }
+      }
+    }
+
+    return document;
   }
 
   /**
