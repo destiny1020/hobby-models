@@ -12,4 +12,12 @@ import com.micropoplar.models.crawl.domain.OneNNNRecordRaw;
  */
 public interface OneNNNRawRecordRepository extends JpaRepository<OneNNNRecordRaw, Long> {
 
+  /**
+   * 根据SN获取抓取记录。
+   * 
+   * @param sn
+   * @return
+   */
+  OneNNNRecordRaw findBySn(String sn);
+
 }

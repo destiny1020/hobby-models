@@ -5,12 +5,15 @@ import java.net.MalformedURLException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import javax.transaction.Transactional;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.junit4.AbstractTransactionalJUnit4SpringContextTests;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.transaction.TestTransaction;
@@ -57,6 +60,21 @@ public class OneNNNCrawlTest extends AbstractTransactionalJUnit4SpringContextTes
 
     TestTransaction.flagForCommit();
     TestTransaction.end();
+  }
+
+  /**
+   * 删除爬取详情表中的损坏记录。
+   */
+  @Test
+  @Transactional
+  @Rollback(false)
+  public void testDeleteCorruptedRecord() {
+    // String sn = "10434320";
+    //
+    // OneNNNRecordRaw recordRaw = rawRecordRepo.findBySn(sn);
+    // rawRecordRepo.delete(recordRaw);
+
+    rawRecordRepo.delete(1130L);
   }
 
   /**
