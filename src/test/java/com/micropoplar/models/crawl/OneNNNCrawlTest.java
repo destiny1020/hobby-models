@@ -42,7 +42,7 @@ public class OneNNNCrawlTest extends AbstractTransactionalJUnit4SpringContextTes
 
   @Test
   public void testCrawlSingleItem() throws MalformedURLException, IOException {
-    String sn = "10411171";
+    String sn = "10006724";
 
     crawlService.crawl(sn);
 
@@ -84,11 +84,12 @@ public class OneNNNCrawlTest extends AbstractTransactionalJUnit4SpringContextTes
         OneNNNRecordRaw crawledRecord = null;
         try {
           crawledRecord = crawlService.crawl(task.getSn());
+          task.setHasCrawled(Boolean.TRUE);
         } catch (Exception e) {
           // TODO Auto-generated catch block
           e.printStackTrace();
+          task.setHasCrawled(Boolean.FALSE);
         }
-        task.setHasCrawled(Boolean.TRUE);
         return crawledRecord;
       }).filter(crawledRecord -> {
         return crawledRecord != null && crawledRecord.getShouldSave().booleanValue();
