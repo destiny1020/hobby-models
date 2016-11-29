@@ -104,4 +104,10 @@ public class OneNNNRecordListRaw extends AuditingEntity {
   @Column(name = "has_crawled", nullable = false)
   private Boolean hasCrawled = false;
 
+  /**
+   * 是否已经爬取过
+   */
+  @Column(name = "has_cancelled", nullable = false)
+  private Boolean hasCancelled = false;
+
 }

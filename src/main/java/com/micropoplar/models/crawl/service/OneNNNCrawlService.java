@@ -119,6 +119,12 @@ public class OneNNNCrawlService {
 
     // 封绘小图
     Element coverElem = doc.select(OneNNNCrawlConstant.SEL_COVER).first();
+    // 如果是带有确认的详情页面，放弃
+    if (coverElem == null) {
+      record.setShouldSave(Boolean.FALSE);
+      return record;
+    }
+
     String coverUrl = OneNNNCrawlerUtil.addPrefix(coverElem.attr("src"));
     record.setCoverUrl(coverUrl);
 

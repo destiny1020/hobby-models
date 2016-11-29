@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import javax.transaction.Transactional;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -102,11 +103,16 @@ public class OneNNNCrawlTest extends AbstractTransactionalJUnit4SpringContextTes
         OneNNNRecordRaw crawledRecord = null;
         try {
           crawledRecord = crawlService.crawl(task.getSn());
-          task.setHasCrawled(Boolean.TRUE);
+          if (StringUtils.isNotBlank(crawledRecord.getCoverUrl())) {
+            task.setHasCrawled(Boolean.TRUE);
+          } else {
+            task.setHasCancelled(Boolean.TRUE);
+          }
         } catch (Exception e) {
           // TODO Auto-generated catch block
           e.printStackTrace();
           task.setHasCrawled(Boolean.FALSE);
+          task.setHasCancelled(Boolean.FALSE);
         }
         return crawledRecord;
       }).filter(crawledRecord -> {

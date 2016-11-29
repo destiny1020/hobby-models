@@ -24,7 +24,7 @@ public interface OneNNNRecordListRawRepository extends JpaRepository<OneNNNRecor
    * @param pageRequest
    * @return
    */
-  @Query("select r from OneNNNRecordListRaw r where r.hasCrawled = false")
+  @Query("select r from OneNNNRecordListRaw r where r.hasCrawled = false and r.hasCancelled = false")
   Page<OneNNNRecordListRaw> findByRemainingTask(Pageable pageRequest);
 
 }
