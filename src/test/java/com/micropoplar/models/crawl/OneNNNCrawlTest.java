@@ -2,7 +2,9 @@ package com.micropoplar.models.crawl;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import javax.persistence.EntityManager;
@@ -130,6 +132,23 @@ public class OneNNNCrawlTest extends AbstractTransactionalJUnit4SpringContextTes
       TestTransaction.end();
     } while (tasks != null && tasks.getContent() != null && tasks.getContent().size() > 0);
 
+  }
+
+  /**
+   * 更新is_latest字段。
+   */
+  @Test
+  @Commit
+  public void updateIsLatestField() {
+    List<OneNNNRecordRaw> allRecords = rawRecordRepo.findAll();
+    Map<String, OneNNNRecordRaw> metSn = new HashMap<>();
+    allRecords.forEach(record -> {
+      if (metSn.containsKey(record.getSn())) {
+        OneNNNRecordRaw lastLatestRecord = metSn.get(record.getSn());
+        lastLatestRecord.setLatest(Boolean.FALSE);
+      }
+      metSn.put(record.getSn(), record);
+    });
   }
 
 }

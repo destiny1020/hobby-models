@@ -31,7 +31,7 @@ import lombok.NoArgsConstructor;
  *
  */
 @Data
-@EqualsAndHashCode(callSuper = false, exclude = {"id", "images"})
+@EqualsAndHashCode(callSuper = false, exclude = {"id", "images", "latest"})
 @NoArgsConstructor
 @Entity
 @Table(name = "models_crawl_1999_record_raw")
@@ -126,6 +126,12 @@ public class OneNNNRecordRaw extends AuditingEntity {
   @CollectionTable(name = "models_crawl_1999_record_raw_image",
       joinColumns = @JoinColumn(name = "item_id"))
   private List<OneNNNRecordImage> images;
+
+  /**
+   * 是否是最新的RAW记录
+   */
+  @Column(name = "is_latest", nullable = false)
+  private Boolean latest = Boolean.TRUE;
 
   @Transient
   private Boolean shouldSave = false;
