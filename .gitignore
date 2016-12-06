@@ -22,3 +22,4 @@ crawler/
 src/main/resources/config.properties
 lib/
 testdata/
+test/

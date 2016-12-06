@@ -3,6 +3,12 @@ package com.micropoplar.models.crawl.spec;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Date;
+
 import org.junit.Before;
 import org.junit.Test;
 
@@ -64,6 +70,27 @@ public class OneNNNRecordListRawSpec {
   @Test
   public void whenTwoRecordsAreDiffThenNotEquals() {
     assertThat(record1.equals(record3), is(Boolean.FALSE));
+  }
+
+  @Test
+  public void whenRenameFolderThenNameIsCorrect() throws IOException {
+    String sn = "12345678";
+    Path path = Paths.get(String.format("test/images/%s", sn));
+    Files.createDirectories(path);
+
+    // 重命名
+    Date now = new Date();
+    Path newPath =
+        Paths.get(String.format("test/images/%s_%tY-%tm-%td-%tH-%tM", sn, now, now, now, now, now));
+    Files.move(path, newPath);
+
+    boolean newPathExists = Files.exists(newPath);
+    boolean oldPathNotExist = Files.exists(path);
+
+    assertThat(newPathExists, is(Boolean.TRUE));
+    assertThat(oldPathNotExist, is(Boolean.FALSE));
+
+    Files.delete(newPath);
   }
 
 }

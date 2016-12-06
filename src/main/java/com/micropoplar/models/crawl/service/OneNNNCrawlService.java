@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -23,7 +24,6 @@ import javax.persistence.NoResultException;
 import javax.transaction.Transactional;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -38,6 +38,7 @@ import com.micropoplar.models.crawl.constant.CrawlContant;
 import com.micropoplar.models.crawl.domain.OneNNNRecordImage;
 import com.micropoplar.models.crawl.domain.OneNNNRecordRaw;
 import com.micropoplar.models.crawl.service.biz.OneNNNImageMetadata;
+import com.micropoplar.models.crawl.service.biz.OneNNNRecordRawCompareResult;
 import com.micropoplar.models.crawl.util.CrawlConnectionUtil;
 import com.micropoplar.models.crawl.util.OneNNNCrawlerUtil;
 
@@ -72,7 +73,7 @@ public class OneNNNCrawlService {
    * @param imagesMeta
    * @return
    */
-  public Pair<Boolean, Boolean> isTheSameWithLatestItem(OneNNNRecordRaw nowRecord,
+  public OneNNNRecordRawCompareResult isTheSameWithLatestItem(OneNNNRecordRaw nowRecord,
       List<OneNNNImageMetadata> imagesMeta) {
     try {
       OneNNNRecordRaw latestRecord =
@@ -91,9 +92,9 @@ public class OneNNNCrawlService {
             nowRecord.getTitle()));
       }
 
-      return Pair.of(fieldsEqual, imagesCountEqual);
+      return new OneNNNRecordRawCompareResult(fieldsEqual, imagesCountEqual, latestRecord);
     } catch (NoResultException nre) {
-      return Pair.of(Boolean.FALSE, Boolean.FALSE);
+      return new OneNNNRecordRawCompareResult(Boolean.FALSE, Boolean.FALSE, null);
     }
   }
 
@@ -213,10 +214,33 @@ public class OneNNNCrawlService {
     addLargeImageUrl(sn, imagesMeta);
 
     // 只有在爬取的信息和上次不同时，才会调用保存操作
-    Pair<Boolean, Boolean> equalsInfo = this.isTheSameWithLatestItem(record, imagesMeta);
-    if (!equalsInfo.getRight().booleanValue()) {
-      // 创建保存目录
+    OneNNNRecordRawCompareResult compareResult = this.isTheSameWithLatestItem(record, imagesMeta);
+    if (!compareResult.isImagesCountEqual()) {
+      // 保存路径
       Path path = Paths.get(String.format("crawler/images/%s", sn));
+
+      // 如果目录存在，则重命名作为备份
+      if (Files.exists(path)) {
+        Date now = new Date();
+        Path newPath = Paths.get(
+            String.format("crawler/images/%s_%tY-%tm-%td-%tH-%tM", sn, now, now, now, now, now));
+        Files.move(path, newPath);
+
+        // 删除七牛存储的上个版本的图片
+        compareResult.getLatestSavedRecord().getImages().parallelStream().forEach(image -> {
+          // http://og91pufx5.bkt.clouddn.com/crawler/onennn/10411171/4adf7505-446e-42b1-af4e-c576ca645d13
+          String qiniuSmallKey = image.getQiniuSmallUrl()
+              .substring(image.getQiniuSmallUrl().indexOf("crawler/onennn/"));
+          String qiniuLargeKey = image.getQiniuLargeUrl()
+              .substring(image.getQiniuLargeUrl().indexOf("crawler/onennn/"));
+
+          logger.info(String.format("[爬虫 - 图片] SN: %s - 移除小图KEY: %s", sn, qiniuSmallKey));
+          imageManager.delete("models-biz", qiniuSmallKey);
+          logger.info(String.format("[爬虫 - 图片] SN: %s - 移除大图KEY: %s", sn, qiniuLargeKey));
+          imageManager.delete("models-biz", qiniuLargeKey);
+        });
+      }
+
       Files.createDirectories(path);
 
       imagesMeta.parallelStream().forEach(meta -> {
@@ -240,7 +264,7 @@ public class OneNNNCrawlService {
       });
     }
 
-    if (!equalsInfo.getLeft().booleanValue() || !equalsInfo.getRight().booleanValue()) {
+    if (compareResult.shoudSave()) {
       record.setShouldSave(Boolean.TRUE);
     } else {
       logger.info(String.format("[爬虫 - 基本] SN: %s 已经被爬取了，且信息并没有发生变化，无需保存", sn));
