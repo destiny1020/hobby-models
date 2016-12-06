@@ -5,6 +5,7 @@ import java.net.MalformedURLException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
 
 import org.apache.commons.lang3.StringUtils;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.test.annotation.Commit;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.junit4.AbstractTransactionalJUnit4SpringContextTests;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -34,6 +36,9 @@ import com.micropoplar.models.crawl.service.OneNNNCrawlService;
 @RunWith(SpringRunner.class)
 @SpringBootTest
 public class OneNNNCrawlTest extends AbstractTransactionalJUnit4SpringContextTests {
+
+  @Autowired
+  private EntityManager em;
 
   @Autowired
   private OneNNNCrawlService crawlService;
@@ -82,23 +87,22 @@ public class OneNNNCrawlTest extends AbstractTransactionalJUnit4SpringContextTes
    * 爬取详情页。
    */
   @Test
+  @Commit
   public void testCrawlItems() {
     int size = 10;
 
-    // TODO: 重构
-    Page<OneNNNRecordListRaw> tasks =
-        rawListRecordRepo.findByRemainingTask(new PageRequest(0, size));
-    int totalPages = tasks.getTotalPages();
-
-    for (int page = 0; page < totalPages; page++) {
-      System.out.println("获取下一页的数据: " + page);
+    Page<OneNNNRecordListRaw> tasks = null;
+    int page = 1;
+    do {
+      System.out.println("获取下一页的数据: " + page++);
 
       if (TestTransaction.isActive()) {
         TestTransaction.end();
       }
       TestTransaction.start();
 
-      tasks = rawListRecordRepo.findByRemainingTask(new PageRequest(page, size));
+      // 每次获取10条数据
+      tasks = rawListRecordRepo.findByRemainingTask(new PageRequest(0, size));
       List<OneNNNRecordRaw> crawledRecords = tasks.getContent().parallelStream().map(task -> {
         OneNNNRecordRaw crawledRecord = null;
         try {
@@ -123,7 +127,7 @@ public class OneNNNCrawlTest extends AbstractTransactionalJUnit4SpringContextTes
       rawListRecordRepo.save(tasks);
       TestTransaction.flagForCommit();
       TestTransaction.end();
-    }
+    } while (tasks != null && tasks.getContent() != null && tasks.getContent().size() > 0);
 
   }
 

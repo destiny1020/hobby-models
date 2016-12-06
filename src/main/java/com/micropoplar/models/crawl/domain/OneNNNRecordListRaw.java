@@ -22,7 +22,7 @@ import lombok.NoArgsConstructor;
  *
  */
 @Data
-@EqualsAndHashCode(callSuper = false, exclude = "id")
+@EqualsAndHashCode(callSuper = false, exclude = {"id", "hasCrawled", "hasCancelled"})
 @NoArgsConstructor
 @Entity
 @Table(name = "models_crawl_1999_record_list_raw")

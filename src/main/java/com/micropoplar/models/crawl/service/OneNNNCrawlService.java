@@ -270,7 +270,7 @@ public class OneNNNCrawlService {
         try {
           conn.connect();
           InputStream is = conn.getInputStream();
-          imageBytes = IOUtils.toByteArray(is);
+          imageBytes = IOUtils.toByteArray(IOUtils.toBufferedInputStream(is));
           out.write(imageBytes);
           out.flush();
           out.close();
@@ -286,7 +286,7 @@ public class OneNNNCrawlService {
     } else {
       // 已经存在
       FileInputStream in = new FileInputStream(localImageName);
-      imageBytes = IOUtils.toByteArray(in);
+      imageBytes = IOUtils.toByteArray(IOUtils.toBufferedInputStream(in));
     }
 
     if (isSmall) {

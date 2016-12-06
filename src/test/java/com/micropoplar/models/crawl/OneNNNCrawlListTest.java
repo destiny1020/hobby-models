@@ -2,15 +2,16 @@ package com.micropoplar.models.crawl;
 
 import java.util.Arrays;
 import java.util.List;
-
-import javax.transaction.Transactional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.Rollback;
+import org.springframework.test.annotation.Commit;
+import org.springframework.test.context.junit4.AbstractTransactionalJUnit4SpringContextTests;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.transaction.TestTransaction;
 
 import com.micropoplar.models.crawl.biz.OneNNNCrawlListPage;
 import com.micropoplar.models.crawl.domain.OneNNNCrawlTarget;
@@ -28,7 +29,7 @@ import com.micropoplar.models.infra.service.BrandService;
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest
-public class OneNNNCrawlListTest {
+public class OneNNNCrawlListTest extends AbstractTransactionalJUnit4SpringContextTests {
 
   @Autowired
   private OneNNNCrawlListService recordListRawService;
@@ -40,14 +41,16 @@ public class OneNNNCrawlListTest {
   private OneNNNCrawlTargetRepository crawlTargetRepo;
 
   @Test
-  @Transactional
-  @Rollback(false)
+  @Commit
   public void testSaveListItems() {
     List<OneNNNCrawlTarget> targets = crawlTargetRepo.findAll();
     targets.forEach(target -> {
       OneNNNCrawlListPage pageCrawler = new OneNNNCrawlListPage(String.valueOf(target.getSn()));
       System.out.println(String.format("开始爬取类型: %s - %s - %s", target.getType(), target.getName(),
           target.getScale()));
+
+      final AtomicInteger totalChanged = new AtomicInteger(0);
+
       do {
         pageCrawler = pageCrawler.navToNext();
         try {
@@ -56,6 +59,11 @@ public class OneNNNCrawlListTest {
           e.printStackTrace();
           return;
         }
+
+        if (TestTransaction.isActive()) {
+          TestTransaction.end();
+        }
+        TestTransaction.start();
 
         List<OneNNNRecordListRaw> items = pageCrawler.parseItems();
         items.forEach(item -> {
@@ -71,12 +79,19 @@ public class OneNNNCrawlListTest {
               }
             });
 
+            totalChanged.incrementAndGet();
             recordListRawService.saveRecord(item);
           } else {
             System.out.println("和现有的爬取记录相同，不需要保存: " + item.getSn());
           }
         });
+
+        TestTransaction.flagForCommit();
+        TestTransaction.end();
       } while (pageCrawler.hasNextPage());
+
+      System.out.println(String.format("结束爬取类型: %s - %s - %s, 变更数量: %d", target.getType(),
+          target.getName(), target.getScale(), totalChanged.get()));
     });
   }
 
