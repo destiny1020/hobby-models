@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +20,11 @@ import com.micropoplar.models.crawl.domain.OneNNNRecordListRaw;
 import com.micropoplar.models.crawl.repository.OneNNNCrawlTargetRepository;
 import com.micropoplar.models.crawl.service.OneNNNCrawlListService;
 import com.micropoplar.models.infra.domain.Brand;
+import com.micropoplar.models.infra.domain.Scale;
+import com.micropoplar.models.infra.domain.Series;
 import com.micropoplar.models.infra.service.BrandService;
+import com.micropoplar.models.infra.service.ScaleService;
+import com.micropoplar.models.infra.service.SeriesService;
 
 /**
  * 列表抓取服务行为测试。
@@ -35,11 +40,22 @@ public class OneNNNCrawlListTest extends AbstractTransactionalJUnit4SpringContex
   private OneNNNCrawlListService recordListRawService;
 
   @Autowired
+  private OneNNNCrawlTargetRepository crawlTargetRepo;
+
+  @Autowired
   private BrandService brandService;
 
   @Autowired
-  private OneNNNCrawlTargetRepository crawlTargetRepo;
+  private ScaleService scaleService;
 
+  @Autowired
+  private SeriesService seriesService;
+
+  // @formatter:off
+  /**
+   * 获取列表项目。
+   */
+  // @formatter:on
   @Test
   @Commit
   public void testSaveListItems() {
@@ -68,7 +84,7 @@ public class OneNNNCrawlListTest extends AbstractTransactionalJUnit4SpringContex
         List<OneNNNRecordListRaw> items = pageCrawler.parseItems();
         items.forEach(item -> {
           if (!recordListRawService.isTheSameWithLatestRawListItem(item)) {
-            System.out.println("保存新的爬取记录: " + item.getSn());
+            System.out.println("保存新的列表爬取记录: " + item.getSn());
 
             // 判断是否需要保存品牌记录
             String[] makers = item.getMakers().split("、");
@@ -76,6 +92,24 @@ public class OneNNNCrawlListTest extends AbstractTransactionalJUnit4SpringContex
               if (!brandService.existsByNameJapanese(maker)) {
                 System.out.println("保存新的品牌: " + maker);
                 brandService.save(new Brand(maker));
+              }
+            });
+
+            // 判断是否需要保存比例元数据
+            String[] scales = item.getScales().split("、");
+            Arrays.asList(scales).forEach(scale -> {
+              if (StringUtils.isNotBlank(scale) && !scaleService.existsByName(scale)) {
+                System.out.println("保存新的比例: " + scale);
+                scaleService.save(new Scale(scale));
+              }
+            });
+
+            // 判断是否需要保存系列元数据
+            String[] seriesArray = item.getSeries().split("、");
+            Arrays.asList(seriesArray).forEach(series -> {
+              if (!seriesService.existsByName(series)) {
+                System.out.println("保存新的系列: " + series);
+                seriesService.save(new Series(series));
               }
             });
 

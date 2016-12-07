@@ -24,6 +24,7 @@ import javax.persistence.NoResultException;
 import javax.transaction.Transactional;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -41,6 +42,8 @@ import com.micropoplar.models.crawl.service.biz.OneNNNImageMetadata;
 import com.micropoplar.models.crawl.service.biz.OneNNNRecordRawCompareResult;
 import com.micropoplar.models.crawl.util.CrawlConnectionUtil;
 import com.micropoplar.models.crawl.util.OneNNNCrawlerUtil;
+import com.micropoplar.models.infra.domain.Country;
+import com.micropoplar.models.infra.service.CountryService;
 
 /**
  * 1999抓取服务。
@@ -65,6 +68,9 @@ public class OneNNNCrawlService {
 
   @Autowired
   private IImageManager imageManager;
+
+  @Autowired
+  private CountryService countryService;
 
   /**
    * 判断当前爬取记录是否和历史爬取记录相等。
@@ -205,6 +211,15 @@ public class OneNNNCrawlService {
     List<String> countries = meta2Map.get(OneNNNCrawlConstant.KEY_COUNTRY);
     if (countries != null && countries.size() > 0) {
       record.setCountries(countries);
+
+      // 处理国家元数据
+      countries.forEach(country -> {
+        if (StringUtils.isNotBlank(country) && !countryService.existsByNameJapanese(country)) {
+          logger.info(String.format("[爬虫 - 基本] SN: %s, 保存新的国家元数据: %s", sn, country));
+          countryService.save(new Country(country));
+        }
+      });
+
       logger.info(String.format("[爬虫 - 基本] SN: %s, 国家: %s", sn, countries));
     }
 

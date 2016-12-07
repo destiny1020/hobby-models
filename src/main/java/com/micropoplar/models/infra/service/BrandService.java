@@ -7,6 +7,10 @@ import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.transaction.Transactional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
@@ -21,7 +25,10 @@ import com.micropoplar.models.infra.repository.BrandRepository;
  *
  */
 @Service
+@Transactional
 public class BrandService implements CommandLineRunner {
+
+  private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   private Random rand = new Random();
   private Set<String> codeAvailable;
