@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.micropoplar.infra.imagesdk.service.IImageManager;
 import com.micropoplar.infra.imagesdk.service.impl.QiniuImageManager;
-import com.micropoplar.models.infra.auth.UserContainer;
+import com.micropoplar.models.auth.UserContainer;
 import com.micropoplar.models.token.JwtService;
 import com.micropoplar.models.token.JwtSetting;
 import com.micropoplar.models.token.filter.JwtFilter;
@@ -104,7 +104,8 @@ public class CommonConfig {
   @Bean
   public CacheManager cacheManager() {
     SimpleCacheManager cacheManager = new SimpleCacheManager();
-    cacheManager.setCaches(Arrays.asList(new ConcurrentMapCache("scales")));
+    cacheManager.setCaches(Arrays.asList(new ConcurrentMapCache("scales"),
+        new ConcurrentMapCache("decryptedFiles"), new ConcurrentMapCache("decryptedBase64s")));
 
     return cacheManager;
   }

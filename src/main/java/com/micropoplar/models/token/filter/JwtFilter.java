@@ -14,8 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.micropoplar.models.infra.auth.UserContainer;
-import com.micropoplar.models.infra.auth.UserToken;
+import com.micropoplar.models.auth.UserContainer;
+import com.micropoplar.models.auth.UserToken;
 import com.micropoplar.models.token.JwtPayLoad;
 import com.micropoplar.models.token.JwtService;
 import com.micropoplar.models.token.JwtSetting;

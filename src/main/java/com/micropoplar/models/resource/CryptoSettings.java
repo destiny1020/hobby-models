@@ -1,4 +1,4 @@
-package com.micropoplar.models.crypto;
+package com.micropoplar.models.resource;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;

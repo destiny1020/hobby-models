@@ -1,4 +1,4 @@
-package com.micropoplar.models.infra.auth;
+package com.micropoplar.models.auth;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;

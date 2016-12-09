@@ -1,15 +1,18 @@
-package com.micropoplar.models.infra.controller;
+package com.micropoplar.models.resource.controller;
 
 import java.io.IOException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
+import java.util.stream.Collectors;
+
+import javax.crypto.NoSuchPaddingException;
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -20,13 +23,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.micropoplar.infra.imagesdk.service.IImageManager;
-import com.micropoplar.infra.imagesdk.service.IResponse;
+import com.micropoplar.models.auth.UserToken;
 import com.micropoplar.models.common.response.ApiResponse;
 import com.micropoplar.models.common.service.ResponseGenerator;
-import com.micropoplar.models.crypto.service.FileCryptoService;
-import com.micropoplar.models.infra.auth.UserToken;
 import com.micropoplar.models.infra.exception.CommonApiExceptions;
+import com.micropoplar.models.resource.service.FileCryptoService;
+import com.micropoplar.models.resource.service.FileUploadService;
 
 /**
  * 文件上传控制器。
@@ -38,16 +40,16 @@ import com.micropoplar.models.infra.exception.CommonApiExceptions;
 @RequestMapping("/public/common/upload")
 public class FileUploadController {
 
-  private static final String BUCKET_NAME = "models-biz";
+  private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   @Autowired
   private ResponseGenerator resGen;
 
   @Autowired
-  private IImageManager imageManager;
+  private FileCryptoService fileCryptoService;
 
   @Autowired
-  private FileCryptoService fileCryptoService;
+  private FileUploadService fileUploadService;
 
   /**
    * 上传多个文件(普通上传)。
@@ -72,15 +74,28 @@ public class FileUploadController {
     boolean shouldEncrypt =
         (encrypt != null && encrypt.booleanValue()) ? Boolean.TRUE : Boolean.FALSE;
 
-    List<String> imgUrls = new ArrayList<String>();
-    for (MultipartFile file : files) {
-      imgUrls.add(uploadCore(prefix, file, shouldEncrypt) + " -- " + file.getOriginalFilename());
-    }
-    return resGen.response(imgUrls);
+    List<String> imageUrls = Arrays.asList(files).parallelStream().map(file -> {
+      String imageUrl;
+      try {
+        logger.info(String.format("[文件 - 上传] 尝试上传文件: %s, 启用加密: %s", file.getOriginalFilename(),
+            shouldEncrypt));
+        imageUrl = uploadCore(prefix, file, shouldEncrypt) + " -- " + file.getOriginalFilename();
+      } catch (Exception e) {
+        e.printStackTrace();
+        logger.warn(String.format("[文件 - 上传] 上传文件失败: %s, 启用加密: %s", file.getOriginalFilename(),
+            shouldEncrypt));
+        imageUrl = "";
+      }
+
+      return imageUrl;
+    }).collect(Collectors.toList());
+
+    return resGen.response(imageUrls);
   }
 
   private String uploadCore(String prefix, MultipartFile file, boolean encrypt)
-      throws InvalidKeyException, InvalidAlgorithmParameterException {
+      throws InvalidKeyException, InvalidAlgorithmParameterException, NoSuchAlgorithmException,
+      NoSuchPaddingException {
     if (StringUtils.isBlank(prefix)) {
       prefix = "default";
     }
@@ -97,11 +112,8 @@ public class FileUploadController {
     } catch (IOException e) {
       e.printStackTrace();
     }
-    String key = prefix + "/" + new SimpleDateFormat("yyMMdd").format(new Date()) + "/"
-        + UUID.randomUUID().toString();
-    IResponse response = imageManager.simpleUpload(BUCKET_NAME, key, imageBytes);
-    String imageUrl = response.getDownloadUrl();
-    return imageUrl;
+
+    return fileUploadService.uploadFile(prefix, imageBytes);
   }
 
 }

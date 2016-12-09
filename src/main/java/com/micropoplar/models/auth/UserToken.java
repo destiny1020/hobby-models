@@ -1,4 +1,4 @@
-package com.micropoplar.models.infra.auth;
+package com.micropoplar.models.auth;
 
 import com.micropoplar.models.infra.domain.User;
 import com.micropoplar.models.token.JwtType;
